@@ -137,7 +137,7 @@ def send_alerts(slack_subscriptions, district_id, district_name, state_name, ses
             print("Sent slack alerts to subscription_id: {} name: {} email: {} for {}, {}".format(subscription_id, name, email, district_id, state_name))
 
 def send_slack_alert(webhook, district_id, district_name, state_name, sessions):
-    title = "<!channel> Found new 18+ sessions in {}, {}".format(district_name, state_name)
+    title = "<!channel> Found new 18+ appointments in {}, {}".format(district_name, state_name)
     requests.post(webhook, json={
         "username": "18+ Vaccine Alert!",
         "icon_emoji": ":hospital:",
