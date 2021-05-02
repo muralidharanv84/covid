@@ -14,14 +14,18 @@ insert_session_query = """ INSERT INTO public.appointments (session_id, district
 appointments_district_query = """ SELECT session_id, district_id, center_id, center_name, pincode, vaccine, fee_type, date, available_capacity, min_age from public.appointments where district_id = %s"""
 delete_appointments_district = """ DELETE FROM public.appointments where district_id = %s"""
 
+subscriptions_query = """ SELECT id, name, email, district_id, webhook from public.slack_subscriptions"""
+
 
 def main():
     start_t = time.time()
     print("Accessing API at {}".format(api_base_url))
     clear_db()
     districts = load_districts()
+    slack_subscriptions = load_subscriptions()
 
-    get_appointments(districts)
+
+    get_appointments(districts, slack_subscriptions)
     conn.close()
 
     end_t = time.time()
@@ -46,7 +50,7 @@ def load_districts():
     cur.close()
     return districts
 
-def get_appointments(districts):
+def get_appointments(districts, slack_subscriptions):
     today = date.today()
     today_str = today.strftime("%d-%m-%Y")
 
@@ -99,6 +103,8 @@ def get_appointments(districts):
                 new_session_ids = set()
                 print("Found {} sessions in district {} {}, {}".format(len(district_sessions), district_id, district_name, state_name))
                 cur = conn.cursor()
+                new_sessions = False
+                sessions = []
                 for (center_id, center_name, pincode, fee_type, session_id, session_date, vaccine, available_capacity, min_age_limit) in district_sessions:
                 
                     insert_session_record = (session_id, district_id, center_id, center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit)
@@ -107,18 +113,66 @@ def get_appointments(districts):
                     if session_id not in old_session_ids:
                         new_session_ids.add(session_id)
                         new_session = True
+                        new_sessions = True
                     new_str = ""
                     if new_session:
                         new_str = " NEW!!!"
                     print("\t{} pin: {} {}({}) {} slots: {} min_age: {}{}".format(center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit, new_str))
+                    sessions.append((center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit, new_session))
                 cur.close()
                 conn.commit()
+                if new_sessions:
+                    send_alerts(slack_subscriptions, district_id, district_name, state_name, sessions)
         else:
             print("Failed to get appointments from API for district_id: {} name: {}. Response code: {}".format(district_id, district_name, response.status_code))
 
+def send_alerts(slack_subscriptions, district_id, district_name, state_name, sessions):
+    for (subscription_id, name, email, sub_district_id, webhook) in slack_subscriptions:
+        if district_id == sub_district_id:
+            send_slack_alert(webhook, district_id, district_name, state_name, sessions)
+            print("Sent slack alerts to subscription_id: {} name: {} email: {} for {}, {}".format(subscription_id, name, email, district_id, state_name))
+
+def send_slack_alert(webhook, district_id, district_name, state_name, sessions):
+    title = "<!channel> Found new sessions in {}, {}".format(district_name, state_name)
+    requests.post(webhook, json={
+        "username": "18+ Vaccine Alert!",
+        "icon_emoji": ":hospital:",
+        "text": title,
+        "attachments": build_attachments(district_id, district_name, state_name, sessions)
+    })
+    return
+
+def build_attachments(district_id, district_name, state_name, sessions):
+    attachments = []
+    blocks = []
+    for (center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit, new_session) in sessions:
+        txt = "\t{} pin: {} {}({}) {} slots: {} min_age: {}".format(center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit)
+        if new_session:
+            txt = "*" + txt + "*"
+
+        block = {}
+        block["type"] = "section"
+        block["text"] = {
+            "type": "mrkdwn",
+            "text": txt
+        }
+        blocks.append(block)
+    attachments.append({
+        "blocks": blocks
+    })
+    return attachments
 
 
 
+def load_subscriptions():
+    cur = conn.cursor()
+    cur.execute(subscriptions_query)
+    
+    subscriptions = cur.fetchall()
+    conn.commit()
+
+    print("Found {} subscriptions".format(len(subscriptions)))
+    return subscriptions
     
 if __name__ == "__main__":
     main()
