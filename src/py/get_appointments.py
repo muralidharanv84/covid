@@ -62,9 +62,9 @@ def get_appointments(districts, slack_subscriptions):
 
 
     for (district_id, district_name, state_id, state_name) in districts:
-        print("Fetching appointments for district_id: {} district_name: {} state_id: {} state_name: {}".format(
-            district_id, district_name, state_id, state_name
-        ))
+        # print("Fetching appointments for district_id: {} district_name: {} state_id: {} state_name: {}".format(
+        #     district_id, district_name, state_id, state_name
+        # ))
 
         response = requests.get(appointments_url, params = {
             'district_id': district_id,
