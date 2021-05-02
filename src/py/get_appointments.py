@@ -4,6 +4,8 @@ import psycopg2
 import time
 from datetime import datetime
 from datetime import date
+import pytz
+
 from utils import get_db_connection
 
 api_base_url = "https://cdn-api.co-vin.in/api"
@@ -19,6 +21,7 @@ subscriptions_query = """ SELECT id, name, email, district_id, webhook from publ
 
 def main():
     start_t = time.time()
+    print("Starting get_appointments {}".format(datetime.now(pytz.timezone('Asia/Kolkata'))))
     print("Accessing API at {}".format(api_base_url))
     clear_db()
     districts = load_districts()
@@ -30,6 +33,7 @@ def main():
 
     end_t = time.time()
     print("Time taken to get appointments: {:.2f}s".format(end_t - start_t))
+    print("Finished get_appointments {}".format(datetime.now(pytz.timezone('Asia/Kolkata'))))
 
 def clear_db():
     cur = conn.cursor()
