@@ -121,7 +121,7 @@ def get_appointments(districts, slack_subscriptions):
                     new_str = ""
                     if new_session:
                         new_str = " NEW!!!"
-                    print("\t{} pin: {} {}({}) {} slots: {} min_age: {}{}".format(center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit, new_str))
+                        print("\t{} pin: {} {}({}) {} slots: {} min_age: {}{}".format(center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit, new_str))
                     sessions.append((center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit, new_session))
                 cur.close()
                 conn.commit()
