@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from datetime import date
 import pytz
+import sys
 
 from utils import get_db_connection
 
@@ -27,8 +28,11 @@ def main():
     districts = load_districts()
     slack_subscriptions = load_subscriptions()
 
-
-    get_appointments(districts, slack_subscriptions)
+    only_subscribed_districts = True
+    print("Command line: {}".format(sys.argv))
+    if len(sys.argv) > 1 and sys.argv[1] == "all":
+        only_subscribed_districts = False
+    get_appointments(districts, slack_subscriptions, only_subscribed_districts)
     conn.close()
 
     end_t = time.time()
@@ -54,17 +58,22 @@ def load_districts():
     cur.close()
     return districts
 
-def get_appointments(districts, slack_subscriptions):
+def get_appointments(districts, slack_subscriptions, only_subscribed_districts=True):
     today = date.today()
     today_str = today.strftime("%d-%m-%Y")
 
     appointments_url = api_base_url + "/v2/appointment/sessions/public/calendarByDistrict"
 
+    subscribed_districts = set()
+    for (subscription_id, name, email, sub_district_id, webhook) in slack_subscriptions:
+        subscribed_districts.add(sub_district_id)
 
     for (district_id, district_name, state_id, state_name) in districts:
-        # print("Fetching appointments for district_id: {} district_name: {} state_id: {} state_name: {}".format(
-        #     district_id, district_name, state_id, state_name
-        # ))
+        if only_subscribed_districts and district_id not in subscribed_districts:
+            continue
+        print("Fetching appointments for district_id: {} district_name: {} state_id: {} state_name: {}".format(
+            district_id, district_name, state_id, state_name
+        ))
 
         response = requests.get(appointments_url, params = {
             'district_id': district_id,
