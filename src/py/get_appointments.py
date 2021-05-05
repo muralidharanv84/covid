@@ -78,6 +78,8 @@ def get_appointments(districts, slack_subscriptions, only_subscribed_districts=T
         response = requests.get(appointments_url, params = {
             'district_id': district_id,
             'date': today_str
+        }, headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
         })
         if response:
             district_sessions = []
