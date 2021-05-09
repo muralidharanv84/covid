@@ -33,7 +33,10 @@ def clear_db():
 
 def get_states():
     url = api_base_url + "/v2/admin/location/states"
-    response = requests.get(url)
+    response = requests.get(url, headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
+            'Cache-Control': 'no-cache'
+        })
     if response:
         states = response.json()            
         return states
@@ -55,7 +58,10 @@ def get_districts(states):
             cur.execute(insert_query, record)
 
             districts_url = api_base_url + "/v2/admin/location/districts/{}".format(state_id)
-            response = requests.get(districts_url)
+            response = requests.get(districts_url, headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
+                'Cache-Control': 'no-cache'
+            })
             if response:
                 districts = response.json()['districts']
                 for district in districts:
