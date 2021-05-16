@@ -90,6 +90,8 @@ def get_appointments(districts, slack_subscriptions, only_subscribed_districts=T
                 for session in sessions:
                     min_age_limit = session['min_age_limit']
                     available_capacity = session['available_capacity']
+                    dose1_capacity = session['available_capacity_dose1'] or 'n/a'
+                    dose2_capacity = session['available_capacity_dose2'] or 'n/a'
                     if min_age_limit is not None and min_age_limit < 45 and available_capacity is not None and available_capacity > 0:
                         center_id = center['center_id']
                         center_name = center['name']
@@ -100,7 +102,7 @@ def get_appointments(districts, slack_subscriptions, only_subscribed_districts=T
                         dt = datetime.strptime(session_date_str, '%d-%m-%Y')
                         session_date = dt.strftime('%Y-%m-%d')
                         vaccine = session['vaccine']
-                        district_sessions.append((center_id, center_name, pincode, fee_type, session_id, session_date, vaccine, available_capacity, min_age_limit))
+                        district_sessions.append((center_id, center_name, pincode, fee_type, session_id, session_date, vaccine, available_capacity, dose1_capacity, dose2_capacity, min_age_limit))
 
             cur = conn.cursor()
             cur.execute(appointments_district_query, [district_id])
@@ -121,7 +123,7 @@ def get_appointments(districts, slack_subscriptions, only_subscribed_districts=T
                 cur = conn.cursor()
                 new_sessions = False
                 sessions = []
-                for (center_id, center_name, pincode, fee_type, session_id, session_date, vaccine, available_capacity, min_age_limit) in district_sessions:
+                for (center_id, center_name, pincode, fee_type, session_id, session_date, vaccine, available_capacity, dose1_capacity, dose2_capacity, min_age_limit) in district_sessions:
                 
                     insert_session_record = (session_id, district_id, center_id, center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit)
                     cur.execute(insert_session_query, insert_session_record)
@@ -133,8 +135,8 @@ def get_appointments(districts, slack_subscriptions, only_subscribed_districts=T
                     new_str = ""
                     if new_session:
                         new_str = " NEW!!!"
-                        print("\t{} pin: {} {}({}) {} slots: {} min_age: {}{}".format(center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit, new_str))
-                    sessions.append((center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit, new_session))
+                        print("\t{} pin: {} {}({}) {} slots: {} dose1: {} dose2: {} min_age: {}{}".format(center_name, pincode, vaccine, fee_type, session_date, available_capacity, dose1_capacity, dose2_capacity, min_age_limit, new_str))
+                    sessions.append((center_name, pincode, vaccine, fee_type, session_date, available_capacity, dose1_capacity, dose2_capacity, min_age_limit, new_session))
                 cur.close()
                 conn.commit()
                 if new_sessions:
@@ -161,8 +163,8 @@ def send_slack_alert(webhook, district_id, district_name, state_name, sessions):
 def build_attachments(district_id, district_name, state_name, sessions):
     attachments = []
     blocks = []
-    for (center_name, pincode, vaccine, fee_type, session_date, available_capacity, min_age_limit, new_session) in sessions:
-        txt = "\t{} pin: {} {} {} slots: {} ({})".format(center_name, pincode, vaccine, session_date, available_capacity, fee_type)
+    for (center_name, pincode, vaccine, fee_type, session_date, available_capacity, dose1_capacity, dose2_capacity, min_age_limit, new_session) in sessions:
+        txt = "\t{} pin: {} {} {} slots: {} ({}) dose1: {} , dose2: {}".format(center_name, pincode, vaccine, session_date, available_capacity, fee_type, dose1_capacity, dose2_capacity)
         if new_session:
             txt = "*" + txt + "*"
 

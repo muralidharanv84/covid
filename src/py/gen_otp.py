@@ -25,7 +25,8 @@ def main():
     if response:
         print("OTP generate sucessfully for number: {} \n{}".format(mobile, response.json()))
     else:
-        print("Failed to generate OTP for number: {} Response code: {}\n{}".format(mobile, response.status_code, response.json()))
+        print("Failed to generate OTP for number: {} Response code: {}".format(mobile, response.status_code))
+        print("Reponse text: {}".format(response.content))
 
 if __name__ == "__main__":
     main()
